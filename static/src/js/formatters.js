@@ -34,12 +34,12 @@ export function formatFloat(value, options = {}) {
     }
     const formatted = (value || 0).toFixed(precision).split(".");
     formatted[0] = insertThousandsSep(formatted[0], thousandsSep, grouping);
-    formatted[1] = formatted[1].replace(/0+$/, "");
-    if (options.trailingZeros === false && formatted[1]) {
+    if (formatted[1]) {
         formatted[1] = formatted[1].replace(/0+$/, "");
+        if (options.trailingZeros === false && formatted[1]) {
+            formatted[1] = formatted[1].replace(/0+$/, "");
+        }
     }
-//    console.log(formatted[0]);
-//    console.log(formatted[1]);
     return formatted[1] ? formatted.join(decimalPoint) : formatted[0];
 }
 
@@ -66,7 +66,7 @@ export function formatCurrency(amount, currencyId, options = {}) {
     if (currency.position === "after") {
         formatted.reverse();
     }
-    console.log(formatted);
+    // console.log(`Currency: ${formatted}`);
     return formatted.join(nbsp);
 }
 
@@ -99,7 +99,7 @@ patch(MonetaryField.prototype, {
 
             return this.value;
         }
-//        console.log(this.value);
+        // console.log(`Monetary: ${this.value}`);
         return formatMonetary(this.value, {
             digits: this.currencyDigits,
             currencyId: this.currencyId,
@@ -107,3 +107,48 @@ patch(MonetaryField.prototype, {
         });
     }
 })
+
+
+odoo.define('custom_monetary_format.monetary_format', [], function () {
+    "use strict";
+    
+        const { ListRenderer } = require("@web/views/list/list_renderer");
+        const { FormRenderer } = require("@web/views/form/form_renderer");
+        const { patch } = require("@web/core/utils/patch");
+    
+        // Patch ListRenderer
+        patch(ListRenderer.prototype, {
+            async _render() {
+                await this._super.apply(this, arguments);
+                this._removeDecimalZero();
+            },
+    
+            _removeDecimalZero() {
+                document.querySelectorAll(".o_list_monetary span").forEach((element) => {
+                    let value = element.textContent.trim();
+                    if (value.endsWith(".00")) {
+                        element.textContent = value.slice(0, -3); // Remove .00
+                    }
+                });
+            }
+        });
+    
+        // Patch FormRenderer
+        patch(FormRenderer.prototype, {
+            async _render() {
+                await this._super.apply(this, arguments);
+                this._removeDecimalZero();
+            },
+    
+            _removeDecimalZero() {
+                document.querySelectorAll(".o_field_monetary span").forEach((element) => {
+                    let value = element.textContent.trim();
+                    if (value.endsWith(".00")) {
+                        element.textContent = value.slice(0, -3); // Remove .00
+                    }
+                });
+            }
+        });
+    
+    });
+    

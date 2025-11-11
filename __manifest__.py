@@ -14,18 +14,22 @@ odoo Decimal Precision
 Decimal Precision
 Decimal Precision drop zeros
 Hide Decimal Zero Trailing
+
+This modules was original created by CorTex IT Solutions but had not been updated for Odoo 18.
+This is a fork of the original module to make it compatible with Odoo 18.
+https://github.com/agrogers/remove_decimal_zero_trailing
+
     """,
 
-    'author': 'CorTex IT Solutions Ltd.',
-    'website': 'https://cortexsolutions.net',
+    'author': 'Original version by CorTex IT Solutions Ltd.',
+    'website': 'https://github.com/agrogers/remove_decimal_zero_trailing',
     'license': 'LGPL-3',
-    'support': 'support@cortexsolutions.net',
 
     # Categories can be used to filter modules in modules listing
     # Check https://github.com/odoo/odoo/blob/master/odoo/addons/base/module/module_data.xml
     # for the full list
     'category': 'Extra Tools',
-    'version': '1.0.0',
+    'version': '1.0.1',
 
     # any module necessary for this one to work correctly
     'depends': ['website_sale'],

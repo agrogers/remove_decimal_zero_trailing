@@ -36,8 +36,16 @@ class MonetaryConverter(models.AbstractModel):
             value = options['from_currency']._convert(value, display_currency, company, date)
 
         lang = self.user_lang()
-        formatted_amount = lang.format(fmt, display_currency.round(value),grouping=True, monetary=True).replace(r' ', '\N{NO-BREAK SPACE}').replace(r'-',
-                                                                                                                 '-\N{ZERO WIDTH NO-BREAK SPACE}')
+        try:
+            formatted_amount = lang.format(fmt, display_currency.round(value), grouping=True, monetary=True)
+        except TypeError:
+            # Fallback to without 'monetary' if it causes an error
+            formatted_amount = lang.format(fmt, display_currency.round(value), grouping=True).replace(
+                r' ', '\N{NO-BREAK SPACE}').replace(r'-', '-\N{ZERO WIDTH NO-BREAK SPACE}')
+        else:
+            # Perform the replace operations only if it worked without errors
+            formatted_amount = formatted_amount.replace(r' ', '\N{NO-BREAK SPACE}').replace(
+                r'-', '-\N{ZERO WIDTH NO-BREAK SPACE}')
 
         pre = post = ''
         if display_currency.position == 'before':
@@ -54,10 +62,13 @@ class MonetaryConverter(models.AbstractModel):
                 return Markup('{pre}<span class="oe_currency_value">{0}</span><span class="oe_currency_value" style="font-size:0.5em">{1}</span>{post}').format(integer_part, decimal_part, pre=pre, post=post)
             else:
                 return Markup('{pre}<span class="oe_currency_value">{0}</span>{post}').format(integer_part, pre=pre, post=post)
+            
+        # Remove trailing zeroes and decimal point only if the amount contains a decimal point. 
+        # This is required for values like "65,000" (MMK currency which shows no decimals at all and causes the 000 to be removed). 
+        if lang.decimal_point in formatted_amount:
+            formatted_amount = formatted_amount.rstrip('0').rstrip(lang.decimal_point)
 
-        return Markup('{pre}<span class="oe_currency_value">{0}</span>{post}').format(formatted_amount.rstrip('0').rstrip(lang.decimal_point), pre=pre,post=post)
-
-
+        return Markup('{pre}<span class="oe_currency_value">{0}</span>{post}').format(formatted_amount, pre=pre,post=post)
 
 class FloatConverter(models.AbstractModel):
     _inherit = 'ir.qweb.field.float'
@@ -84,7 +95,9 @@ class FloatConverter(models.AbstractModel):
         if precision is None:
             formatted = re.sub(r'(?:(0|\d+?)0+)$', r'\1', formatted)
         _logger.error(formatted)
-        _logger.error(pycompat.to_text(formatted.rstrip('0').rstrip(lang.decimal_point)))
+        # _logger.error(pycompat.to_text(formatted.rstrip('0').rstrip(lang.decimal_point)))   # --> gives errors on my Windows dev machine - maybe because Windows handles UTF-8 poorly
+        safe = formatted.replace('\ufeff', '')
+        _logger.error(pycompat.to_text(safe.rstrip('0').rstrip(lang.decimal_point)))
         return pycompat.to_text(formatted.rstrip('0').rstrip(lang.decimal_point))
 
 
